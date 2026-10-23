@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数轴动点 P、Q · 相距 2 的时刻</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#1d1d1f; --sub:#6e6e73;
+    --line:#e6e6ea; --blue:#0a84ff; --red:#ff3b30; --green:#34c759;
+    --track:#e9e9ee; --amber:#ff9500; --purple:#5e5ce6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;padding:22px 32px 20px}
+  header h1{margin:0 0 4px;font-size:19px;font-weight:600;letter-spacing:.2px}
+  header p{margin:0;opacity:.88;font-size:13px}
+  .wrap{max-width:1000px;margin:18px auto 40px;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.045)}
+  .prob{font-size:14px;line-height:1.95;color:#3a3a3c}
+  .prob b{color:var(--ink)}
+  #stage{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 4px 2px;overflow:hidden}
+  #stage svg{display:block;width:100%;height:auto}
+  .ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .tval{font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:110px}
+  .tval span{color:var(--blue)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;min-width:200px;height:6px;border-radius:3px;
+    background:var(--track);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+    border:2px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--blue);
+    box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btns:empty{display:none}
+  button{
+    font-family:inherit;font-size:12.5px;padding:6px 13px;border-radius:9px;
+    border:1px solid var(--line);background:#fff;color:#3a3a3c;cursor:pointer;transition:.15s;
+  }
+  button:hover{background:#f2f2f7;border-color:#d0d0d6}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.primary:hover{background:#0077e6;border-color:#0077e6}
+  button.hit{border-color:var(--green);color:#1f8a3b}
+  button.hit:hover{background:#e8f9ed}
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+  .readout:empty{display:none}
+  .ro{background:#fafafc;border:1px solid var(--line);border-radius:11px;padding:10px 13px}
+  .ro .k{font-size:11.5px;color:var(--sub);letter-spacing:.3px}
+  .ro .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px;transition:color .12s}
+  .ro .v.blue{color:var(--blue)} .ro .v.red{color:var(--red)}
+  .ro .v.green{color:#1f8a3b} .ro .v.amber{color:var(--amber)} .ro .v.purple{color:var(--purple)}
+  .note{font-size:12.5px;color:var(--sub);margin-top:2px}
+  .ans{font-size:13.5px;line-height:2}
+  .ans code{background:#f2f2f7;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#c2410c}
+  @media (max-width:640px){
+    header{padding:18px 20px}
+    .wrap{padding:0 12px}
+    .card{padding:14px 15px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hTitle"></h1>
+  <p id="hSub"></p>
+</header>
+
+<div class="wrap">
+  <div class="card"><div class="prob" id="probBox"></div></div>
+
+  <div class="card">
+    <div id="stage">
+      <svg id="svg" viewBox="0 0 920 320" preserveAspectRatio="xMidYMid meet" role="img" aria-label="数轴动点演示">
+        <defs>
+          <marker id="arwG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#34c759"/>
+          </marker>
+        </defs>
+        <g id="layerStatic"></g>
+        <g id="layerDynamic"></g>
+      </svg>
+    </div>
+    <div class="ctrl">
+      <div class="tval"><span id="pSym">t</span> = <span id="pVal">0.0</span> <span id="pUnit"></span></div>
+      <input id="slider" type="range" min="0" max="21" step="0.05" value="0">
+      <button id="play" class="primary">播放</button>
+    </div>
+    <div class="btns" id="jumps"></div>
+  </div>
+
+  <div class="card readout" id="readoutBox"></div>
+
+  <div class="card"><div class="ans" id="ansBox"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ══════════ A. 配置区 ══════════ */
+var CONFIG = {
+  title: '数轴动点 P、Q · 什么时候相距 2',
+  subtitle: '拖动滑块 t（秒），看 P 匀速右行、Q 在 A、C 之间往返',
+  view: { W:920, H:320, xmin:-14.6, xmax:11.6, ymin:0, ymax:1,
+          padl:62, padr:44, padt:0, padb:0, uniform:false },
+  param: { sym:'t', unit:'秒', min:0, max:21, step:0.05, start:0 },
+  playSpeed: 1.6,
+  problem: 'A、B、C 表示数 a、b、c，满足 <b>|a+12| + |b+6| + (c−9)² = 0</b>。' +
+           '动点 P 从 A 出发以 <b>1 单位/秒</b>向右运动；当 P 到达 B 时，动点 Q 才从 A 出发，' +
+           '以 <b>3 单位/秒</b>在 A、C 之间往返，P 到达 C 时两者同时停止。<br>' +
+           '<b>问：P 开始运动后多少秒，P、Q 两点相距 2 个单位？</b>',
+  answer: '<b>答案：t = 2、8、10、14.5、15.5 秒</b><br>' +
+          '<span class="note">分四段解 |PQ| = 2：① 0≤t&lt;6（Q 未动）得 t=2；' +
+          '② 6≤t≤13 得 t=8、10；③ 13&lt;t≤20 得 t=14.5、15.5；④ 20&lt;t≤21 无解。' +
+          '注意 t=2 时 Q 尚未出发、仍停在 A。点上方绿色按钮可直接跳到每个答案时刻。</span>',
+  readouts: [
+    { id:'rP', label:'P 的坐标', cls:'blue' },
+    { id:'rQ', label:'Q 的坐标', cls:'red' },
+    { id:'rS', label:'Q 的状态', cls:'purple' },
+    { id:'rD', label:'PQ 距离',  cls:'green' }
+  ],
+  jumps: [
+    { label:'t = 0（起点）', value:0 },
+    { label:'跳到 t = 2', value:2 },
+    { label:'跳到 t = 8', value:8 },
+    { label:'跳到 t = 10', value:10 },
+    { label:'跳到 t = 14.5', value:14.5 },
+    { label:'跳到 t = 15.5', value:15.5 }
+  ]
+};
+
+/* ══════════ B. 数学区 ══════════ */
+var A_POS = -12, B_POS = -6, C_POS = 9;
+var TARGET = 2;            // 题目要求的距离
+
+// P：从 A 向右，速度 1
+function pOf(t){ return A_POS + t; }
+
+// Q：t<6 未出发停 A；6→13 从 A 到 C；13→20 从 C 回 A；20→21 再从 A 出发
+function qOf(t){
+  if(t < 6)   return A_POS;        // 未出发
+  if(t <= 13) return 3*t - 30;     // A → C
+  if(t <= 20) return 48 - 3*t;     // C → A
+  return 3*t - 72;                 // A → C 再次出发
+}
+function qState(t){
+  if(t < 6)   return '未出发（停在 A）';
+  if(t <= 13) return 'A → C 去程';
+  if(t <= 20) return 'C → A 返程';
+  return 'A → C 再次出发';
+}
+
+function stateAt(t){
+  var p = pOf(t), q = qOf(t);
+  return { p:p, q:q, d: Math.abs(p - q), st: qState(t) };
+}
+
+// 数轴纵向布局常量
+var Y_AXIS = 186, Y_P = 122, Y_Q = 258, Y_DIM = 64;
+
+function buildStatic(g, M){
+  // 轴体
+  el('line', { x1:M.PX(-14.6)+4, y1:Y_AXIS, x2:M.PX(11.6)-10, y2:Y_AXIS,
+               stroke:'#8e8e93', 'stroke-width':2, 'stroke-linecap':'round' }, g);
+  // 右端箭头
+  el('path', { d:'M'+(M.PX(11.6)-12)+','+(Y_AXIS-5)+' L'+(M.PX(11.6)-2)+','+Y_AXIS+
+                  ' L'+(M.PX(11.6)-12)+','+(Y_AXIS+5)+' z', fill:'#8e8e93' }, g);
+
+  // 刻度：A/B/C 所在位置不重复标数字
+  var keyVals = [A_POS, B_POS, C_POS];
+  for(var v = -14; v <= 11; v++){
+    var x = M.PX(v);
+    var major = (v % 3 === 0);
+    el('line', { x1:x, y1:Y_AXIS-(major?7:4), x2:x, y2:Y_AXIS+(major?7:4),
+                 stroke: major?'#8e8e93':'#c7c7cc', 'stroke-width': major?1.6:1 }, g);
+    if(major && keyVals.indexOf(v) === -1){
+      var tx = el('text', { x:x, y:Y_AXIS+27, 'text-anchor':'middle', 'font-size':11.5,
+                            fill:'#a1a1a6', 'font-family':'inherit' }, g);
+      tx.textContent = v;
+    }
+  }
+
+  // 定点：轴上小三角 + 轴下合并标签 A(−12)
+  [[A_POS,'A'],[B_POS,'B'],[C_POS,'C']].forEach(function(pair){
+    var val = pair[0], name = pair[1], x = M.PX(val);
+    el('path', { d:'M'+x+','+(Y_AXIS-11)+' l-5,9 l10,0 z', fill:'#3a3a3c' }, g);
+    var lab = el('text', { x:x, y:Y_AXIS+27, 'text-anchor':'middle', 'font-size':13,
+                           'font-weight':700, fill:'#1d1d1f', 'font-family':'inherit',
+                           'paint-order':'stroke', stroke:'#fff', 'stroke-width':3.5,
+                           'stroke-linejoin':'round' }, g);
+    lab.textContent = name + (val > 0 ? '(+' + val + ')' : '(' + val + ')');
+  });
+}
+
+function buildDynamic(g, M){
+  // P：轴上方
+  var pLine = el('line', { stroke:'#0a84ff', 'stroke-width':1.3, 'stroke-dasharray':'4 4', opacity:.55 }, g);
+  var pDot  = el('circle', { r:9, fill:'#0a84ff', stroke:'#fff', 'stroke-width':2.5 }, g);
+  var pLab  = el('text', { 'font-size':13, 'font-weight':700, fill:'#0a84ff',
+                           'text-anchor':'middle', 'font-family':'inherit' }, g);
+
+  // Q：轴下方
+  var qLine = el('line', { stroke:'#ff3b30', 'stroke-width':1.3, 'stroke-dasharray':'4 4', opacity:.55 }, g);
+  var qDot  = el('circle', { r:9, fill:'#ff3b30', stroke:'#fff', 'stroke-width':2.5 }, g);
+  var qLab  = el('text', { 'font-size':13, 'font-weight':700, fill:'#ff3b30',
+                           'text-anchor':'middle', 'font-family':'inherit' }, g);
+
+  // 距离标注（双箭头）
+  var dimLine = el('line', { stroke:'#34c759', 'stroke-width':2, 'marker-start':'url(#arwG)',
+                             'marker-end':'url(#arwG)', opacity:0 }, g);
+  var dimText = el('text', { 'font-size':12.5, 'font-weight':600, fill:'#1f8a3b',
+                             'text-anchor':'middle', 'font-family':'inherit' }, g);
+
+  // 达标徽标
+  var badge = el('g', { opacity:0 }, g);
+  el('rect', { x:0, y:0, width:96, height:26, rx:13, fill:'#e8f9ed', stroke:'#34c759', 'stroke-width':1 }, badge);
+  var bTxt = el('text', { x:48, y:18, 'text-anchor':'middle', 'font-size':12, 'font-weight':600,
+                          fill:'#1f8a3b', 'font-family':'inherit' }, badge);
+  bTxt.textContent = '✓ 相距 ' + TARGET;
+
+  return { pLine:pLine, pDot:pDot, pLab:pLab,
+           qLine:qLine, qDot:qDot, qLab:qLab,
+           dimLine:dimLine, dimText:dimText, badge:badge };
+}
+
+function fx(n){ return (n < 0 ? '−' : '') + Math.abs(n).toFixed(2); }
+
+function renderFrame(t, s, D, M){
+  var xp = M.PX(s.p), xq = M.PX(s.q);
+
+  D.pLine.setAttribute('x1', xp); D.pLine.setAttribute('x2', xp);
+  D.pLine.setAttribute('y1', Y_P); D.pLine.setAttribute('y2', Y_AXIS);
+  D.pDot.setAttribute('cx', xp);  D.pDot.setAttribute('cy', Y_P);
+  D.pLab.setAttribute('x', xp);   D.pLab.setAttribute('y', Y_P - 16);
+  D.pLab.textContent = 'P';
+
+  D.qLine.setAttribute('x1', xq); D.qLine.setAttribute('x2', xq);
+  D.qLine.setAttribute('y1', Y_AXIS); D.qLine.setAttribute('y2', Y_Q);
+  D.qDot.setAttribute('cx', xq);  D.qDot.setAttribute('cy', Y_Q);
+  D.qLab.setAttribute('x', xq);   D.qLab.setAttribute('y', Y_Q + 26);
+  D.qLab.textContent = 'Q';
+
+  if(s.d > 0.06){
+    var x1 = Math.min(xp, xq), x2 = Math.max(xp, xq);
+    D.dimLine.setAttribute('x1', x1 + 2); D.dimLine.setAttribute('y1', Y_DIM);
+    D.dimLine.setAttribute('x2', x2 - 2); D.dimLine.setAttribute('y2', Y_DIM);
+    D.dimLine.setAttribute('opacity', 1);
+    D.dimText.setAttribute('x', (x1 + x2) / 2);
+    D.dimText.setAttribute('y', Y_DIM - 9);
+    D.dimText.setAttribute('opacity', 1);
+    D.dimText.textContent = 'PQ = ' + s.d.toFixed(2);
+  } else {
+    D.dimLine.setAttribute('opacity', 0);
+    D.dimText.setAttribute('opacity', 0);
+  }
+
+  var isHit = Math.abs(s.d - TARGET) < 0.06;
+  D.badge.setAttribute('opacity', isHit ? 1 : 0);
+  if(isHit) D.badge.setAttribute('transform', 'translate(' + ((xp + xq) / 2 - 48) + ',' + (Y_DIM - 52) + ')');
+
+  return {
+    rP: fx(s.p),
+    rQ: fx(s.q),
+    rS: s.st,
+    rD: s.d.toFixed(2) + (isHit ? '  ← 命中' : '')
+  };
+}
+
+/* ══════════ C. 引擎区（通用，不改） ══════════ */
+var NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  var n = document.createElementNS(NS, tag);
+  if(attrs){ for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) n.setAttribute(k, attrs[k]); } }
+  if(parent) parent.appendChild(n);
+  return n;
+}
+var V = CONFIG.view;
+var USE_W = V.W - V.padl - V.padr;
+var USE_H = V.H - V.padt - V.padb;
+var RANGE_X = V.xmax - V.xmin;
+var RANGE_Y = V.ymax - V.ymin;
+var SCALE_X = USE_W / RANGE_X;
+var SCALE_Y = USE_H / RANGE_Y;
+if(V.uniform){ SCALE_X = SCALE_Y = Math.min(SCALE_X, SCALE_Y); }
+var OFF_X = V.padl + (USE_W - RANGE_X * SCALE_X) / 2;
+var OFF_Y = V.padt + (USE_H - RANGE_Y * SCALE_Y) / 2;
+function MX(x){ return OFF_X + (x - V.xmin) * SCALE_X; }
+function MY(y){ return OFF_Y + (V.ymax - y) * SCALE_Y; }
+var M = { MX:MX, MY:MY, PX:MX, SCALE_X:SCALE_X, SCALE_Y:SCALE_Y };
+
+function setText(id, txt){ var n = document.getElementById(id); if(n) n.textContent = txt; }
+function setHTML(id, html){ var n = document.getElementById(id); if(n) n.innerHTML = html; }
+
+setText('hTitle', CONFIG.title);
+setText('hSub', CONFIG.subtitle);
+setHTML('probBox', CONFIG.problem);
+setHTML('ansBox', CONFIG.answer);
+var svgEl = document.getElementById('svg');
+if(svgEl) svgEl.setAttribute('viewBox', '0 0 ' + V.W + ' ' + V.H);
+setText('pSym', CONFIG.param.sym);
+setText('pUnit', CONFIG.param.unit || '');
+
+var gStatic = document.getElementById('layerStatic');
+var gDynamic = document.getElementById('layerDynamic');
+buildStatic(gStatic, M);
+var DYN = buildDynamic(gDynamic, M);
+
+var roNodes = {};
+var roBox = document.getElementById('readoutBox');
+(CONFIG.readouts || []).forEach(function(r){
+  var wrap = document.createElement('div'); wrap.className = 'ro';
+  var k = document.createElement('div'); k.className = 'k'; k.textContent = r.label;
+  var vEl = document.createElement('div'); vEl.className = 'v' + (r.cls ? ' ' + r.cls : '');
+  vEl.textContent = '—';
+  wrap.appendChild(k); wrap.appendChild(vEl);
+  roBox.appendChild(wrap);
+  roNodes[r.id] = vEl;
+});
+
+var P = CONFIG.param;
+var slider = document.getElementById('slider');
+slider.min = P.min; slider.max = P.max; slider.step = P.step; slider.value = P.start;
+var pVal = document.getElementById('pVal');
+
+function render(t){
+  var s = stateAt(t);
+  pVal.textContent = t.toFixed(1);
+  var out = renderFrame(t, s, DYN, M) || {};
+  for(var id in out){
+    if(Object.prototype.hasOwnProperty.call(out, id) && roNodes[id]) roNodes[id].textContent = out[id];
+  }
+}
+function curT(){ return parseFloat(slider.value); }
+function setT(v){ v = Math.max(P.min, Math.min(P.max, +v)); slider.value = v; render(v); }
+
+(function(){
+  var box = document.getElementById('jumps');
+  (CONFIG.jumps || []).forEach(function(j){
+    var b = document.createElement('button');
+    b.className = (Math.abs(j.value - P.min) < 1e-9) ? '' : 'hit';
+    b.textContent = j.label;
+    b.addEventListener('click', function(){ stopPlay(); setT(j.value); });
+    box.appendChild(b);
+  });
+})();
+
+var playBtn = document.getElementById('play');
+var raf = null, lastTs = null, playing = false;
+function tick(ts){
+  if(!playing) return;
+  if(lastTs === null) lastTs = ts;
+  var dt = (ts - lastTs) / 1000; lastTs = ts;
+  var nt = curT() + dt * CONFIG.playSpeed;
+  if(nt >= P.max){ setT(P.max); stopPlay(); return; }
+  setT(nt);
+  raf = requestAnimationFrame(tick);
+}
+function stopPlay(){
+  playing = false;
+  if(raf){ cancelAnimationFrame(raf); raf = null; }
+  lastTs = null; playBtn.textContent = '播放';
+}
+playBtn.addEventListener('click', function(){
+  if(playing){ stopPlay(); return; }
+  if(curT() >= P.max - 1e-9) setT(P.min);
+  playing = true; lastTs = null; playBtn.textContent = '暂停';
+  raf = requestAnimationFrame(tick);
+});
+slider.addEventListener('input', function(){ stopPlay(); render(curT()); });
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowLeft'){ stopPlay(); setT(curT() - P.step * 2); e.preventDefault(); }
+  if(e.key === 'ArrowRight'){ stopPlay(); setT(curT() + P.step * 2); e.preventDefault(); }
+  if(e.key === ' '){ playBtn.click(); e.preventDefault(); }
+});
+
+setT(P.start);
+
+})();
+</script>
+</body>
+</html>
