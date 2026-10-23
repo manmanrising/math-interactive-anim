@@ -2,6 +2,8 @@
 
 > 一个 WorkBuddy 技能：把一道数学题，变成「手指拖动就能看懂」的单个 HTML 动图。零依赖、可离线、手机直接打开。
 
+**🎬 在线演示（手机直接开，无需安装）**：https://manmanrising.github.io/math-interactive-anim/
+
 ## 这是什么
 
 给它一道题（文字或截图），它产出**一个零外部依赖的 HTML 文件**：拖动滑块实时看动点 / 图形 / 数值变化，一键跳到关键答案时刻，并附完整文字解题过程。面向初中、高中数学。
@@ -29,7 +31,7 @@
 
 - **电脑**：双击 HTML 文件
 - **手机**：通过微信 / 网盘传到手机，用浏览器打开（微信内需「用其他应用打开」）
-- **永久链接**：推到 GitHub 后开启 Pages，获得 `https://<用户名>.github.io/math-interactive-anim/` 链接，手机扫码即看
+- **永久链接**：已开 GitHub Pages，手机浏览器 / 微信直接打开 <https://manmanrising.github.io/math-interactive-anim/>，扫码即看
 
 ## 目录结构
 
