@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>标题占位</title>
+<!--
+  ============================================================
+  交互动图模板（纯 SVG，零外部依赖）
+  用法：复制本文件 → 只改「A. 配置区」和「B. 数学区」→ 完成
+  「C. 引擎区」不要改，它负责样式、控件、动画、读数渲染
+  ============================================================
+-->
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#1d1d1f; --sub:#6e6e73;
+    --line:#e6e6ea; --blue:#0a84ff; --red:#ff3b30; --green:#34c759;
+    --track:#e9e9ee; --amber:#ff9500; --purple:#5e5ce6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;padding:22px 32px 20px}
+  header h1{margin:0 0 4px;font-size:19px;font-weight:600;letter-spacing:.2px}
+  header p{margin:0;opacity:.88;font-size:13px}
+  .wrap{max-width:1000px;margin:18px auto 40px;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.045)}
+  .prob{font-size:14px;line-height:1.95;color:#3a3a3c}
+  .prob b{color:var(--ink)}
+
+  #stage{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 4px 2px;overflow:hidden}
+  #stage svg{display:block;width:100%;height:auto}
+
+  .ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .tval{font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:110px}
+  .tval span{color:var(--blue)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;min-width:200px;height:6px;border-radius:3px;
+    background:var(--track);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+    border:2px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--blue);
+    box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btns:empty{display:none}
+  button{
+    font-family:inherit;font-size:12.5px;padding:6px 13px;border-radius:9px;
+    border:1px solid var(--line);background:#fff;color:#3a3a3c;cursor:pointer;
+    transition:.15s;
+  }
+  button:hover{background:#f2f2f7;border-color:#d0d0d6}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.primary:hover{background:#0077e6;border-color:#0077e6}
+  button.hit{border-color:var(--green);color:#1f8a3b}
+  button.hit:hover{background:#e8f9ed}
+
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+  .readout:empty{display:none}
+  .ro{background:#fafafc;border:1px solid var(--line);border-radius:11px;padding:10px 13px}
+  .ro .k{font-size:11.5px;color:var(--sub);letter-spacing:.3px}
+  .ro .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px;transition:color .12s}
+  .ro .v.blue{color:var(--blue)} .ro .v.red{color:var(--red)}
+  .ro .v.green{color:#1f8a3b} .ro .v.amber{color:var(--amber)} .ro .v.purple{color:var(--purple)}
+
+  .note{font-size:12.5px;color:var(--sub);margin-top:2px}
+  .ans{font-size:13.5px;line-height:2}
+  .ans code{background:#f2f2f7;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#c2410c}
+  @media (max-width:640px){
+    header{padding:18px 20px}
+    .wrap{padding:0 12px}
+    .card{padding:14px 15px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hTitle"></h1>
+  <p id="hSub"></p>
+</header>
+
+<div class="wrap">
+  <div class="card"><div class="prob" id="probBox"></div></div>
+
+  <div class="card">
+    <div id="stage">
+      <svg id="svg" viewBox="0 0 920 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="数学动图演示">
+        <defs>
+          <marker id="arwG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#34c759"/>
+          </marker>
+          <marker id="arwGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#8e8e93"/>
+          </marker>
+        </defs>
+        <g id="layerStatic"></g>
+        <g id="layerDynamic"></g>
+      </svg>
+    </div>
+    <div class="ctrl">
+      <div class="tval"><span id="pSym">t</span> = <span id="pVal">0.0</span> <span id="pUnit"></span></div>
+      <input id="slider" type="range" min="0" max="10" step="0.05" value="0">
+      <button id="play" class="primary">播放</button>
+    </div>
+    <div class="btns" id="jumps"></div>
+  </div>
+
+  <div class="card readout" id="readoutBox"></div>
+
+  <div class="card"><div class="ans" id="ansBox"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   A. 配置区 —— 每题修改
+   ══════════════════════════════════════════════════════════ */
+var CONFIG = {
+  title: '标题：这道题在演示什么',
+  subtitle: '拖动滑块，观察变化',
+  // 数学坐标范围 → 画布映射
+  // uniform:true 表示 x/y 单位长度一致（二维几何题必须开，否则图形会被拉扁）
+  // 纯一维数轴题可关闭 uniform，y 范围随便填
+  view: { W:920, H:400, xmin:-2, xmax:12, ymin:-2, ymax:9,
+          padl:62, padr:52, padt:46, padb:52, uniform:false },
+  // 滑块参数
+  param: { sym:'t', unit:'', min:0, max:10, step:0.05, start:0 },
+  playSpeed: 2.0,          // 自动播放速度（参数单位/秒）
+  problem: '把题面贴这里，用 <b>加粗关键条件</b>。',
+  answer:  '<b>答案：</b>这里写结论<br><span class="note">这里写解析提示。</span>',
+  // 读数卡片（id 由这里定义，renderFrame 里按 id 返回文本）
+  readouts: [
+    { id:'rA', label:'读数 1', cls:'blue' },
+    { id:'rB', label:'读数 2', cls:'green' }
+  ],
+  // 关键答案时刻的快捷跳转按钮
+  jumps: [
+    { label:'起点', value:0 }
+  ]
+};
+
+/* ══════════════════════════════════════════════════════════
+   B. 数学区 —— 每题的核心，按题型重写
+
+   约定：
+     stateAt(t)              → 返回该参数时刻的所有数学量（纯计算，别碰 DOM）
+     buildStatic(g, M)       → 画不动的东西：坐标系、已知图形、标注
+     buildDynamic(g, M)      → 创建会动的 SVG 元素，返回句柄对象
+     renderFrame(t, s, D, M) → 更新 SVG 元素，返回 {读数id: 文本}
+   ══════════════════════════════════════════════════════════ */
+
+// —— 每题改这里：把参数 t 换成所有需要的量 ——
+function stateAt(t){
+  return {
+    // 示例：点 P 在直线 y = 0.5x 上滑动
+    px_: t,
+    py_: 0.5 * t
+  };
+}
+
+// —— 每题改这里：静态图形 ——
+function buildStatic(g, M){
+  // 坐标轴示例（二维题用；一维数轴题改画数轴）
+  var v = CONFIG.view;
+  line(g, M.MX(v.xmin), M.MY(0), M.MX(v.xmax), M.MY(0), '#8e8e93', 1.6);
+  line(g, M.MX(0), M.MY(v.ymin), M.MX(0), M.MY(v.ymax), '#8e8e93', 1.6);
+
+  // 函数图像示例
+  var d = '';
+  for(var x = 0; x <= 10; x += 0.2){
+    d += (x === 0 ? 'M' : 'L') + M.MX(x) + ',' + M.MY(0.5 * x);
+  }
+  el('path', { d:d, fill:'none', stroke:'#5e5ce6', 'stroke-width':2.2 }, g);
+}
+
+// —— 每题改这里：动态元素 ——
+function buildDynamic(g, M){
+  var dot  = el('circle', { r:8, fill:'#0a84ff', stroke:'#fff', 'stroke-width':2.5 }, g);
+  var lab  = el('text', { 'font-size':13, 'font-weight':700, fill:'#0a84ff',
+                'text-anchor':'middle', 'font-family':'inherit' }, g);
+  var guide = el('line', { stroke:'#0a84ff', 'stroke-width':1.2,
+                'stroke-dasharray':'4 4', opacity:.5 }, g);
+  return { dot:dot, lab:lab, guide:guide };
+}
+
+// —— 每题改这里：每帧更新 ——
+function renderFrame(t, s, D, M){
+  D.dot.setAttribute('cx', M.MX(s.px_));
+  D.dot.setAttribute('cy', M.MY(s.py_));
+  D.lab.setAttribute('x', M.MX(s.px_));
+  D.lab.setAttribute('y', M.MY(s.py_) - 15);
+  D.lab.textContent = 'P';
+
+  D.guide.setAttribute('x1', M.MX(s.px_));
+  D.guide.setAttribute('y1', M.MY(s.py_));
+  D.guide.setAttribute('x2', M.MX(s.px_));
+  D.guide.setAttribute('y2', M.MY(0));
+  D.guide.setAttribute('opacity', 1);
+
+  return {
+    rA: s.px_.toFixed(2),
+    rB: s.py_.toFixed(2)
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   C. 引擎区 —— 以下通用，不要改
+   ══════════════════════════════════════════════════════════ */
+var NS = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs, parent){
+  var n = document.createElementNS(NS, tag);
+  if(attrs){
+    for(var k in attrs){
+      if(Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    }
+  }
+  if(parent) parent.appendChild(n);
+  return n;
+}
+
+function line(g, x1, y1, x2, y2, stroke, w, dash){
+  var a = { x1:x1, y1:y1, x2:x2, y2:y2, stroke:stroke || '#8e8e93', 'stroke-width': w || 1.5 };
+  if(dash) a['stroke-dasharray'] = dash;
+  return el('line', a, g);
+}
+
+// 映射器
+var V = CONFIG.view;
+var USE_W = V.W - V.padl - V.padr;
+var USE_H = V.H - V.padt - V.padb;
+var RANGE_X = V.xmax - V.xmin;
+var RANGE_Y = V.ymax - V.ymin;
+var SCALE_X = USE_W / RANGE_X;
+var SCALE_Y = USE_H / RANGE_Y;
+// uniform:true → x/y 单位长度一致，图形不变形（左右或上下自动居中留白）
+if(V.uniform){ SCALE_X = SCALE_Y = Math.min(SCALE_X, SCALE_Y); }
+var OFF_X = V.padl + (USE_W - RANGE_X * SCALE_X) / 2;
+var OFF_Y = V.padt + (USE_H - RANGE_Y * SCALE_Y) / 2;
+
+function MX(x){ return OFF_X + (x - V.xmin) * SCALE_X; }
+function MY(y){ return OFF_Y + (V.ymax - y) * SCALE_Y; }
+// 一维数轴便捷别名
+function PX(v){ return MX(v); }
+
+var M = { MX:MX, MY:MY, PX:PX, SCALE_X:SCALE_X, SCALE_Y:SCALE_Y };
+
+// 初始化 head / 题面 / 答案 / 画布尺寸（全部容错，缺节点不中断脚本）
+function setText(id, txt){ var n = document.getElementById(id); if(n) n.textContent = txt; }
+function setHTML(id, html){ var n = document.getElementById(id); if(n) n.innerHTML = html; }
+
+setText('hTitle', CONFIG.title);
+setText('hSub', CONFIG.subtitle);
+setHTML('probBox', CONFIG.problem);
+setHTML('ansBox', CONFIG.answer);
+var svgEl = document.getElementById('svg');
+if(svgEl) svgEl.setAttribute('viewBox', '0 0 ' + V.W + ' ' + V.H);
+setText('pSym', CONFIG.param.sym);
+setText('pUnit', CONFIG.param.unit || '');
+
+var gStatic = document.getElementById('layerStatic');
+var gDynamic = document.getElementById('layerDynamic');
+
+buildStatic(gStatic, M);
+var DYN = buildDynamic(gDynamic, M);
+
+// 读数卡片
+var roNodes = {};
+var roBox = document.getElementById('readoutBox');
+(CONFIG.readouts || []).forEach(function(r){
+  var wrap = document.createElement('div');
+  wrap.className = 'ro';
+  var k = document.createElement('div');
+  k.className = 'k';
+  k.textContent = r.label;
+  var vEl = document.createElement('div');
+  vEl.className = 'v' + (r.cls ? ' ' + r.cls : '');
+  vEl.textContent = '—';
+  wrap.appendChild(k); wrap.appendChild(vEl);
+  roBox.appendChild(wrap);
+  roNodes[r.id] = vEl;
+});
+
+// 滑块
+var P = CONFIG.param;
+var slider = document.getElementById('slider');
+slider.min = P.min; slider.max = P.max; slider.step = P.step; slider.value = P.start;
+var pVal = document.getElementById('pVal');
+
+var lastState = null;
+function render(t){
+  var s = stateAt(t);
+  lastState = s;
+  pVal.textContent = (Number.isInteger(t) ? t.toFixed(1) : String(t));
+  var out = renderFrame(t, s, DYN, M) || {};
+  for(var id in out){
+    if(Object.prototype.hasOwnProperty.call(out, id) && roNodes[id]){
+      roNodes[id].textContent = out[id];
+    }
+  }
+}
+
+function curT(){ return parseFloat(slider.value); }
+
+function setT(v){
+  v = Math.max(P.min, Math.min(P.max, +v));
+  slider.value = v;
+  render(v);
+}
+
+// 跳转按钮
+(function(){
+  var box = document.getElementById('jumps');
+  (CONFIG.jumps || []).forEach(function(j){
+    var b = document.createElement('button');
+    b.className = (j.value === P.min) ? '' : 'hit';
+    b.textContent = j.label;
+    b.addEventListener('click', function(){ stopPlay(); setT(j.value); });
+    box.appendChild(b);
+  });
+})();
+
+// 播放
+var playBtn = document.getElementById('play');
+var raf = null, lastTs = null, playing = false;
+
+function tick(ts){
+  if(!playing) return;
+  if(lastTs === null) lastTs = ts;
+  var dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  var nt = curT() + dt * CONFIG.playSpeed;
+  if(nt >= P.max){ setT(P.max); stopPlay(); return; }
+  setT(nt);
+  raf = requestAnimationFrame(tick);
+}
+function stopPlay(){
+  playing = false;
+  if(raf){ cancelAnimationFrame(raf); raf = null; }
+  lastTs = null;
+  playBtn.textContent = '播放';
+}
+playBtn.addEventListener('click', function(){
+  if(playing){ stopPlay(); return; }
+  if(curT() >= P.max - 1e-9) setT(P.min);
+  playing = true;
+  lastTs = null;
+  playBtn.textContent = '暂停';
+  raf = requestAnimationFrame(tick);
+});
+
+// 手动拖动
+slider.addEventListener('input', function(){ stopPlay(); render(curT()); });
+
+// 键盘微调
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowLeft'){ stopPlay(); setT(curT() - P.step * 2); e.preventDefault(); }
+  if(e.key === 'ArrowRight'){ stopPlay(); setT(curT() + P.step * 2); e.preventDefault(); }
+  if(e.key === ' '){ playBtn.click(); e.preventDefault(); }
+});
+
+// 首帧
+setT(P.start);
+
+})();
+</script>
+</body>
+</html>
