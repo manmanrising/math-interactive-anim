@@ -1,0 +1,10 @@
+# 本地产物
+output/
+__pycache__/
+*.pyc
+.workbuddy/
+
+# 编辑器 / 系统文件
+.DS_Store
+*.swp
+Thumbs.db
