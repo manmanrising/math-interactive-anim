@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二次函数动点面积最值</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#1d1d1f; --sub:#6e6e73;
+    --line:#e6e6ea; --blue:#0a84ff; --red:#ff3b30; --green:#34c759;
+    --track:#e9e9ee; --amber:#ff9500; --purple:#5e5ce6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;padding:22px 32px 20px}
+  header h1{margin:0 0 4px;font-size:19px;font-weight:600;letter-spacing:.2px}
+  header p{margin:0;opacity:.88;font-size:13px}
+  .wrap{max-width:1000px;margin:18px auto 40px;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.045)}
+  .prob{font-size:14px;line-height:1.95;color:#3a3a3c}
+  .prob b{color:var(--ink)}
+  #stage{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 4px 2px;overflow:hidden}
+  #stage svg{display:block;width:100%;height:auto}
+  .ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .tval{font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;min-width:110px}
+  .tval span{color:var(--blue)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;min-width:200px;height:6px;border-radius:3px;
+    background:var(--track);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+    border:2px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--blue);
+    box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab;
+  }
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btns:empty{display:none}
+  button{
+    font-family:inherit;font-size:12.5px;padding:6px 13px;border-radius:9px;
+    border:1px solid var(--line);background:#fff;color:#3a3a3c;cursor:pointer;transition:.15s;
+  }
+  button:hover{background:#f2f2f7;border-color:#d0d0d6}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.primary:hover{background:#0077e6;border-color:#0077e6}
+  button.hit{border-color:var(--green);color:#1f8a3b}
+  button.hit:hover{background:#e8f9ed}
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+  .readout:empty{display:none}
+  .ro{background:#fafafc;border:1px solid var(--line);border-radius:11px;padding:10px 13px}
+  .ro .k{font-size:11.5px;color:var(--sub);letter-spacing:.3px}
+  .ro .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px;transition:color .12s}
+  .ro .v.blue{color:var(--blue)} .ro .v.red{color:var(--red)}
+  .ro .v.green{color:#1f8a3b} .ro .v.amber{color:var(--amber)} .ro .v.purple{color:var(--purple)}
+  .note{font-size:12.5px;color:var(--sub);margin-top:2px}
+  .ans{font-size:13.5px;line-height:2}
+  .ans code{background:#f2f2f7;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#c2410c}
+  @media (max-width:640px){
+    header{padding:18px 20px}
+    .wrap{padding:0 12px}
+    .card{padding:14px 15px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hTitle"></h1>
+  <p id="hSub"></p>
+</header>
+
+<div class="wrap">
+  <div class="card"><div class="prob" id="probBox"></div></div>
+
+  <div class="card">
+    <div id="stage">
+      <svg id="svg" viewBox="0 0 920 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="二次函数动点面积演示">
+        <defs>
+          <marker id="arwG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#34c759"/>
+          </marker>
+        </defs>
+        <g id="layerStatic"></g>
+        <g id="layerDynamic"></g>
+      </svg>
+    </div>
+    <div class="ctrl">
+      <div class="tval"><span id="pSym">t</span> = <span id="pVal">0.0</span> <span id="pUnit"></span></div>
+      <input id="slider" type="range" min="-1" max="3" step="0.01" value="-1">
+      <button id="play" class="primary">播放</button>
+    </div>
+    <div class="btns" id="jumps"></div>
+  </div>
+
+  <div class="card readout" id="readoutBox"></div>
+
+  <div class="card"><div class="ans" id="ansBox"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ══════════ A. 配置区 ══════════ */
+var CONFIG = {
+  title: '二次函数动点面积 · 什么时候最大',
+  subtitle: '拖动滑块，让点 P 沿抛物线滑动，看 △PAB 面积怎么变',
+  view: { W:920, H:520, xmin:-2.7, xmax:4.7, ymin:-0.8, ymax:4.5,
+          padl:64, padr:56, padt:44, padb:52, uniform:true },
+  param: { sym:'t', unit:'', min:-1, max:3, step:0.01, start:-1 },
+  playSpeed: 1.1,
+  problem: '已知抛物线 <b>y = −x² + 2x + 3</b> 与 x 轴交于 A、B 两点（A 在左），点 P 是抛物线上的动点（不与 A、B 重合）。求 <b>△PAB 面积的最大值</b>，并指出此时 P 的坐标。',
+  answer: '<b>答案：面积最大值 8，此时 P(1, 4)（即抛物线顶点）。</b><br>' +
+          '<span class="note">因为 AB = 4 是定长，所以 S = ½·AB·|y<sub>P</sub>| = 2|y<sub>P</sub>|。' +
+          '而 y<sub>P</sub> = −t²+2t+3 = −(t−1)²+4，最大值 4（在 t=1 处）。S<sub>max</sub> = 2×4 = 8。' +
+          '点上方绿色按钮可直接跳到顶点时刻。</span>',
+  readouts: [
+    { id:'rX',   label:'P 的横坐标 t', cls:'blue' },
+    { id:'rY',   label:'P 的纵坐标',   cls:'purple' },
+    { id:'rH',   label:'底边 AB 上的高', cls:'amber' },
+    { id:'rA',   label:'△PAB 面积',    cls:'green' }
+  ],
+  jumps: [
+    { label:'t = −1（A 点）', value:-1 },
+    { label:'t = 1（顶点·面积最大）', value:1 },
+    { label:'t = 3（B 点）', value:3 }
+  ]
+};
+
+/* ══════════ B. 数学区 ══════════ */
+var A_X = -1, B_X = 3;                 // 与 x 轴交点
+var AB  = B_X - A_X;                   // 底边长 = 4
+var Y_MAX = 4, AREA_MAX = 8;           // 顶点纵坐标、最大面积
+
+function f(x){ return -x*x + 2*x + 3; }
+
+function stateAt(t){
+  var y = f(t);
+  return { t:t, y:y, area: 0.5 * AB * Math.abs(y) };
+}
+
+function buildStatic(g, M){
+  var v = CONFIG.view;
+
+  // —— 坐标轴（带箭头）——
+  var x0 = M.MX(v.xmin) + 6, x1 = M.MX(v.xmax) - 8;
+  el('line', { x1:x0, y1:M.MY(0), x2:x1, y2:M.MY(0), stroke:'#c7c7cc', 'stroke-width':1.6 }, g);
+  el('path', { d:'M'+(x1-1)+','+(M.MY(0)-5)+' L'+(x1+9)+','+M.MY(0)+' L'+(x1-1)+','+(M.MY(0)+5)+' z', fill:'#c7c7cc' }, g);
+
+  var y0 = M.MY(v.ymin) - 6, y1 = M.MY(v.ymax) + 8;
+  el('line', { x1:M.MX(0), y1:y0, x2:M.MX(0), y2:y1, stroke:'#c7c7cc', 'stroke-width':1.6 }, g);
+  el('path', { d:'M'+(M.MX(0)-5)+','+(y1+1)+' L'+M.MX(0)+','+(y1-9)+' L'+(M.MX(0)+5)+','+(y1+1)+' z', fill:'#c7c7cc' }, g);
+
+  // —— 刻度数字（跳过 A、B 所在位置，避免与标签重复）——
+  [-2, 1, 2, 4].forEach(function(k){
+    var tx = el('text', { x:M.MX(k), y:M.MY(0)+22, 'text-anchor':'middle', 'font-size':11.5,
+                fill:'#a1a1a6', 'font-family':'inherit' }, g);
+    tx.textContent = k;
+  });
+  [1, 2, 3, 4].forEach(function(k){
+    var tx = el('text', { x:M.MX(0)-11, y:M.MY(k)+4, 'text-anchor':'end', 'font-size':11.5,
+                fill:'#a1a1a6', 'font-family':'inherit' }, g);
+    tx.textContent = k;
+  });
+
+  // —— 抛物线（采样成 path）——
+  var d = '';
+  for(var x = A_X; x <= B_X + 1e-9; x += 0.02){
+    d += (x === A_X ? 'M' : 'L') + M.MX(x).toFixed(2) + ',' + M.MY(f(x)).toFixed(2);
+  }
+  el('path', { d:d, fill:'none', stroke:'#5e5ce6', 'stroke-width':2.6, 'stroke-linecap':'round' }, g);
+
+  // —— 顶点标记（淡）——
+  el('line', { x1:M.MX(1), y1:M.MY(0), x2:M.MX(1), y2:M.MY(Y_MAX),
+               stroke:'#5e5ce6', 'stroke-width':1, 'stroke-dasharray':'3 5', opacity:.35 }, g);
+  el('circle', { cx:M.MX(1), cy:M.MY(Y_MAX), r:4, fill:'none', stroke:'#5e5ce6',
+                 'stroke-width':1.4, opacity:.5 }, g);
+  var vLab = el('text', { x:M.MX(1)+13, y:M.MY(Y_MAX)-9, 'font-size':12.5, fill:'#5e5ce6',
+                opacity:.85, 'font-family':'inherit' }, g);
+  vLab.textContent = '顶点 (1, 4)';
+
+  // —— A、B 定点 ——
+  [[A_X,'A'],[B_X,'B']].forEach(function(p){
+    el('circle', { cx:M.MX(p[0]), cy:M.MY(0), r:5.5, fill:'#1d1d1f', stroke:'#fff', 'stroke-width':2 }, g);
+    var lb = el('text', { x:M.MX(p[0]), y:M.MY(0)-15, 'text-anchor':'middle', 'font-size':13,
+                'font-weight':700, fill:'#1d1d1f', 'font-family':'inherit',
+                'paint-order':'stroke', stroke:'#fff', 'stroke-width':3 }, g);
+    lb.textContent = p[1];
+  });
+
+  // —— 轴名 ——
+  var ax = el('text', { x:M.MX(v.xmax)-14, y:M.MY(0)-10, 'font-size':12, fill:'#8e8e93', 'font-family':'inherit' }, g);
+  ax.textContent = 'x';
+  var ay = el('text', { x:M.MX(0)+12, y:M.MY(v.ymax)+14, 'font-size':12, fill:'#8e8e93', 'font-family':'inherit' }, g);
+  ay.textContent = 'y';
+}
+
+function buildDynamic(g, M){
+  // 三角形填充（最底层，避免遮住点）
+  var poly = el('polygon', { fill:'#0a84ff', 'fill-opacity':.10, stroke:'none' }, g);
+  // 底边 AB 高亮
+  var base = el('line', { stroke:'#1d1d1f', 'stroke-width':3, 'stroke-linecap':'round' }, g);
+  // 高（P 到 x 轴垂线）
+  var high = el('line', { stroke:'#ff9500', 'stroke-width':1.6, 'stroke-dasharray':'5 4', opacity:.85 }, g);
+  // P 点
+  var pDot = el('circle', { r:8, fill:'#ff3b30', stroke:'#fff', 'stroke-width':2.5 }, g);
+  var pLab = el('text', { 'font-size':13, 'font-weight':700, fill:'#ff3b30', 'text-anchor':'middle',
+                'font-family':'inherit', 'paint-order':'stroke', stroke:'#fff', 'stroke-width':3 }, g);
+  // 面积文字（贴在三角形内部）
+  var aTxt = el('text', { 'font-size':13, 'font-weight':700, fill:'#1f8a3b', 'text-anchor':'middle',
+                'font-family':'inherit', 'paint-order':'stroke', stroke:'#fff', 'stroke-width':3.5 }, g);
+  return { poly:poly, base:base, high:high, pDot:pDot, pLab:pLab, aTxt:aTxt };
+}
+
+function renderFrame(t, s, D, M){
+  var xp = M.MX(s.t), yp = M.MY(s.y);
+
+  D.poly.setAttribute('points',
+    M.MX(A_X) + ',' + M.MY(0) + ' ' +
+    M.MX(B_X) + ',' + M.MY(0) + ' ' + xp + ',' + yp);
+
+  D.base.setAttribute('x1', M.MX(A_X)); D.base.setAttribute('y1', M.MY(0));
+  D.base.setAttribute('x2', M.MX(B_X)); D.base.setAttribute('y2', M.MY(0));
+
+  D.high.setAttribute('x1', xp); D.high.setAttribute('y1', yp);
+  D.high.setAttribute('x2', xp); D.high.setAttribute('y2', M.MY(0));
+
+  D.pDot.setAttribute('cx', xp); D.pDot.setAttribute('cy', yp);
+  D.pLab.setAttribute('x', xp); D.pLab.setAttribute('y', yp - 16);
+  D.pLab.textContent = 'P';
+
+  // 面积文字：三角形重心附近
+  D.aTxt.setAttribute('x', (M.MX(A_X) + M.MX(B_X) + xp) / 3);
+  D.aTxt.setAttribute('y', (M.MY(0) + M.MY(0) + yp) / 3 + 4);
+  D.aTxt.textContent = 'S = ' + s.area.toFixed(2);
+
+  var atMax = Math.abs(s.area - AREA_MAX) < 0.01;
+
+  return {
+    rX: s.t.toFixed(2),
+    rY: s.y.toFixed(2),
+    rH: Math.abs(s.y).toFixed(2),
+    rA: s.area.toFixed(2) + (atMax ? '  ← 最大' : '')
+  };
+}
+
+/* ══════════ C. 引擎区（通用，不改） ══════════ */
+var NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  var n = document.createElementNS(NS, tag);
+  if(attrs){ for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) n.setAttribute(k, attrs[k]); } }
+  if(parent) parent.appendChild(n);
+  return n;
+}
+var V = CONFIG.view;
+var USE_W = V.W - V.padl - V.padr;
+var USE_H = V.H - V.padt - V.padb;
+var RANGE_X = V.xmax - V.xmin;
+var RANGE_Y = V.ymax - V.ymin;
+var SCALE_X = USE_W / RANGE_X;
+var SCALE_Y = USE_H / RANGE_Y;
+if(V.uniform){ SCALE_X = SCALE_Y = Math.min(SCALE_X, SCALE_Y); }
+var OFF_X = V.padl + (USE_W - RANGE_X * SCALE_X) / 2;
+var OFF_Y = V.padt + (USE_H - RANGE_Y * SCALE_Y) / 2;
+
+function MX(x){ return OFF_X + (x - V.xmin) * SCALE_X; }
+function MY(y){ return OFF_Y + (V.ymax - y) * SCALE_Y; }
+var M = { MX:MX, MY:MY, PX:MX, SCALE_X:SCALE_X, SCALE_Y:SCALE_Y };
+
+function setText(id, txt){ var n = document.getElementById(id); if(n) n.textContent = txt; }
+function setHTML(id, html){ var n = document.getElementById(id); if(n) n.innerHTML = html; }
+
+setText('hTitle', CONFIG.title);
+setText('hSub', CONFIG.subtitle);
+setHTML('probBox', CONFIG.problem);
+setHTML('ansBox', CONFIG.answer);
+var svgEl = document.getElementById('svg');
+if(svgEl) svgEl.setAttribute('viewBox', '0 0 ' + V.W + ' ' + V.H);
+setText('pSym', CONFIG.param.sym);
+setText('pUnit', CONFIG.param.unit || '');
+
+var gStatic = document.getElementById('layerStatic');
+var gDynamic = document.getElementById('layerDynamic');
+buildStatic(gStatic, M);
+var DYN = buildDynamic(gDynamic, M);
+
+var roNodes = {};
+var roBox = document.getElementById('readoutBox');
+(CONFIG.readouts || []).forEach(function(r){
+  var wrap = document.createElement('div'); wrap.className = 'ro';
+  var k = document.createElement('div'); k.className = 'k'; k.textContent = r.label;
+  var vEl = document.createElement('div'); vEl.className = 'v' + (r.cls ? ' ' + r.cls : '');
+  vEl.textContent = '—';
+  wrap.appendChild(k); wrap.appendChild(vEl);
+  roBox.appendChild(wrap);
+  roNodes[r.id] = vEl;
+});
+
+var P = CONFIG.param;
+var slider = document.getElementById('slider');
+slider.min = P.min; slider.max = P.max; slider.step = P.step; slider.value = P.start;
+var pVal = document.getElementById('pVal');
+
+function render(t){
+  var s = stateAt(t);
+  pVal.textContent = t.toFixed(2);
+  var out = renderFrame(t, s, DYN, M) || {};
+  for(var id in out){
+    if(Object.prototype.hasOwnProperty.call(out, id) && roNodes[id]) roNodes[id].textContent = out[id];
+  }
+}
+function curT(){ return parseFloat(slider.value); }
+function setT(v){ v = Math.max(P.min, Math.min(P.max, +v)); slider.value = v; render(v); }
+
+(function(){
+  var box = document.getElementById('jumps');
+  (CONFIG.jumps || []).forEach(function(j){
+    var b = document.createElement('button');
+    b.className = (Math.abs(j.value - P.min) < 1e-9) ? '' : 'hit';
+    b.textContent = j.label;
+    b.addEventListener('click', function(){ stopPlay(); setT(j.value); });
+    box.appendChild(b);
+  });
+})();
+
+var playBtn = document.getElementById('play');
+var raf = null, lastTs = null, playing = false;
+function tick(ts){
+  if(!playing) return;
+  if(lastTs === null) lastTs = ts;
+  var dt = (ts - lastTs) / 1000; lastTs = ts;
+  var nt = curT() + dt * CONFIG.playSpeed;
+  if(nt >= P.max){ setT(P.max); stopPlay(); return; }
+  setT(nt);
+  raf = requestAnimationFrame(tick);
+}
+function stopPlay(){
+  playing = false;
+  if(raf){ cancelAnimationFrame(raf); raf = null; }
+  lastTs = null; playBtn.textContent = '播放';
+}
+playBtn.addEventListener('click', function(){
+  if(playing){ stopPlay(); return; }
+  if(curT() >= P.max - 1e-9) setT(P.min);
+  playing = true; lastTs = null; playBtn.textContent = '暂停';
+  raf = requestAnimationFrame(tick);
+});
+slider.addEventListener('input', function(){ stopPlay(); render(curT()); });
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowLeft'){ stopPlay(); setT(curT() - P.step * 5); e.preventDefault(); }
+  if(e.key === 'ArrowRight'){ stopPlay(); setT(curT() + P.step * 5); e.preventDefault(); }
+  if(e.key === ' '){ playBtn.click(); e.preventDefault(); }
+});
+
+setT(P.start);
+})();
+</script>
+</body>
+</html>
